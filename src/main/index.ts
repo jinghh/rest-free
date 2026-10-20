@@ -14,6 +14,8 @@ let forceQuit = false
 let store: ConfigStore
 let scheduler: Scheduler
 let reminders: ReminderManager
+/** registerIpc 返回的调度快照广播句柄 */
+let broadcastSchedule: (() => void) | null = null
 
 // 单实例：重复启动时聚焦已有窗口
 if (!app.requestSingleInstanceLock()) {
@@ -41,7 +43,7 @@ function bootstrap(): void {
 
   mainWindow = createMainWindow()
 
-  registerIpc({
+  broadcastSchedule = registerIpc({
     store,
     scheduler,
     reminders,
@@ -49,7 +51,7 @@ function bootstrap(): void {
     openUserData: () => {
       void shell.openPath(app.getPath('userData'))
     }
-  })
+  }).broadcastSchedule
 
   // 托盘实例随应用生命周期常驻，无需保存引用
   createTray(
@@ -84,6 +86,8 @@ function showMainWindow(): void {
   if (mainWindow.isMinimized()) mainWindow.restore()
   mainWindow.show()
   mainWindow.focus()
+  // 窗口长时间隐藏期间调度仍在推进，重新显示时补一次快照，避免「下次提醒」显示旧时间
+  broadcastSchedule?.()
 }
 
 function createMainWindow(): BrowserWindow {

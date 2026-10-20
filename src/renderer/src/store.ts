@@ -53,6 +53,11 @@ export const useAppStore = defineStore('app', () => {
     config.value = next
   }
 
+  /** 调度快照推送：整体替换（触发提醒/snooze 后主进程主动下发） */
+  function applySchedule(snapshot: Record<string, number>): void {
+    schedule.value = snapshot
+  }
+
   return {
     config,
     ready,
@@ -65,6 +70,7 @@ export const useAppStore = defineStore('app', () => {
     saveTask,
     deleteTask,
     updateSettings,
-    applyBroadcast
+    applyBroadcast,
+    applySchedule
   }
 })

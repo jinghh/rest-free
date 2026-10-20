@@ -201,5 +201,37 @@ test('自定义任务不标记 customized', () => {
   assert.ok(!DEFAULT_TASK_IDS.has('my-task'))
 })
 
+// ---------- 9. 调度状态变更通知（下次提醒时间刷新） ----------
+test('setNextFireAt 变化时通知调度状态订阅者', () => {
+  resetFiles()
+  const store = new ConfigStore()
+  let notified = 0
+  const off = store.subscribeState(() => notified++)
+
+  store.setNextFireAt('default-stretch', 1000)
+  assert.equal(notified, 1, '触发点首次设置应通知')
+  store.setNextFireAt('default-stretch', 2000)
+  assert.equal(notified, 2, '触发点推进应通知（提醒弹出后的下一次）')
+  store.setNextFireAt('default-stretch', 2000)
+  assert.equal(notified, 2, '值未变化不应重复通知')
+  assert.equal(store.getNextFireAt('default-stretch'), 2000)
+
+  off()
+  store.setNextFireAt('default-stretch', 3000)
+  assert.equal(notified, 2, '退订后不应再收到通知')
+})
+
+test('删除任务时同步清除其调度状态并通知', () => {
+  resetFiles()
+  const store = new ConfigStore()
+  store.setNextFireAt('default-water', 5000)
+  let notified = 0
+  store.subscribeState(() => notified++)
+
+  store.deleteTask('default-water')
+  assert.equal(store.getNextFireAt('default-water'), undefined, '状态应被清除')
+  assert.equal(notified, 1, '删除任务应通知刷新快照')
+})
+
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed > 0 ? 1 : 0)

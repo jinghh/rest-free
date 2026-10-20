@@ -5,10 +5,12 @@ import type { ConfigStore } from './configStore'
 import type { Scheduler } from './scheduler'
 import type { ReminderManager } from './reminderWindows'
 import { applyAutoStart } from './autostart'
+import { logger } from './logger'
 
 /**
  * 渲染层 ↔ 主进程通道。
  * 所有配置变更的唯一写入口都在这里：先落盘 → 广播 → 调度器重算。
+ * 返回广播句柄，供主窗口重新显示时补一次调度快照刷新。
  */
 export function registerIpc(deps: {
   store: ConfigStore
@@ -16,8 +18,17 @@ export function registerIpc(deps: {
   reminders: ReminderManager
   getMainWindow: () => BrowserWindow | null
   openUserData: () => void
-}): void {
+}): { broadcastSchedule: () => void } {
   const { store, scheduler, reminders, getMainWindow, openUserData } = deps
+
+  /** 把最新调度快照（下次提醒时间）推给主窗口 */
+  const broadcastSchedule = (): void => {
+    const win = getMainWindow()
+    if (!win || win.isDestroyed()) return
+    const snapshot = scheduler.getSnapshot()
+    win.webContents.send('schedule:changed', snapshot)
+    logger.info(`调度快照已推送到主窗口（${Object.keys(snapshot).length} 个任务）`)
+  }
 
   ipcMain.handle('config:get', () => store.getConfig())
 
@@ -89,4 +100,9 @@ export function registerIpc(deps: {
       win.webContents.send('config:changed', config)
     }
   })
+
+  // 调度状态变化广播：触发提醒 / snooze / 删除任务后立即刷新「下次提醒」
+  store.subscribeState(broadcastSchedule)
+
+  return { broadcastSchedule }
 }

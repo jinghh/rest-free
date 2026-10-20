@@ -23,6 +23,7 @@ const api: Api = {
 
   // 调度快照
   getScheduleSnapshot: () => ipcRenderer.invoke('schedule:snapshot'),
+  onScheduleChanged: (cb) => subscribe<Record<string, number>>('schedule:changed', cb),
 
   // 主窗口控制
   minimizeWindow: () => ipcRenderer.send('window:minimize'),

@@ -14,6 +14,7 @@ const formVisible = ref(false)
 const editing = ref<Task | null>(null)
 const settingsVisible = ref(false)
 let unsubscribe: (() => void) | null = null
+let unsubscribeSchedule: (() => void) | null = null
 
 onMounted(async () => {
   await store.load()
@@ -22,11 +23,17 @@ onMounted(async () => {
     store.applyBroadcast(config)
     void store.refreshSchedule()
   })
+  // 调度状态推送：每次提醒弹出/snooze 后「下次提醒」立即刷新，无需用户手动操作
+  unsubscribeSchedule = window.api.onScheduleChanged((snapshot) => {
+    store.applySchedule(snapshot)
+  })
 })
 
 onUnmounted(() => {
   unsubscribe?.()
   unsubscribe = null
+  unsubscribeSchedule?.()
+  unsubscribeSchedule = null
 })
 
 function openCreate(): void {

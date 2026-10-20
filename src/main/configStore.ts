@@ -123,6 +123,7 @@ export class ConfigStore {
   private saveTimer: NodeJS.Timeout | null = null
   private stateSaveTimer: NodeJS.Timeout | null = null
   private readonly listeners = new Set<(config: AppConfig) => void>()
+  private readonly stateListeners = new Set<() => void>()
 
   constructor() {
     const dir = app.getPath('userData')
@@ -303,6 +304,7 @@ export class ConfigStore {
     this.saveNow()
     this.saveStateNow()
     this.notify()
+    this.notifyState()
     return this.config
   }
 
@@ -330,8 +332,11 @@ export class ConfigStore {
   }
 
   setNextFireAt(taskId: string, nextFireAt: number): void {
+    const prev = this.state[taskId]?.nextFireAt
     this.state[taskId] = { nextFireAt, updatedAt: Date.now() }
     this.saveState()
+    // 仅在触发点真正变化时广播，避免配置重算等路径产生无效刷新
+    if (prev !== nextFireAt) this.notifyState()
   }
 
   /** 剔除已删除任务的状态 */
@@ -344,7 +349,10 @@ export class ConfigStore {
         changed = true
       }
     }
-    if (changed) this.saveStateNow()
+    if (changed) {
+      this.saveStateNow()
+      this.notifyState()
+    }
   }
 
   // ---------- 订阅 ----------
@@ -354,12 +362,32 @@ export class ConfigStore {
     return () => this.listeners.delete(listener)
   }
 
+  /**
+   * 订阅调度状态变化（nextFireAt 推进/删除）。
+   * 调度器每次触发提醒、snooze、休息结束补触发都会改动触发点，
+   * 主进程据此把最新快照推给渲染层，避免「下次提醒」显示旧时间。
+   */
+  subscribeState(listener: () => void): () => void {
+    this.stateListeners.add(listener)
+    return () => this.stateListeners.delete(listener)
+  }
+
   private notify(): void {
     for (const listener of this.listeners) {
       try {
         listener(this.config)
       } catch (err) {
         logger.error('配置变更监听器执行失败', err)
+      }
+    }
+  }
+
+  private notifyState(): void {
+    for (const listener of this.stateListeners) {
+      try {
+        listener()
+      } catch (err) {
+        logger.error('调度状态监听器执行失败', err)
       }
     }
   }

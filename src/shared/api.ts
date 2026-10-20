@@ -33,6 +33,8 @@ export interface Api {
 
   // 调度快照：taskId -> 下次触发时间戳
   getScheduleSnapshot(): Promise<Record<string, number>>
+  /** 订阅调度快照更新（触发提醒/snooze 后主进程主动推送） */
+  onScheduleChanged(cb: (snapshot: Record<string, number>) => void): () => void
 
   // 主窗口控制
   minimizeWindow(): void

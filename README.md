@@ -86,7 +86,15 @@ npm run dist:win   # 产出 NSIS 安装包到 dist/
 - 结构：`图标 + 任务名：文案（超长省略，hover title 看全文）+ 文字按钮「立即休息 / 晚 N 分钟」+ 关闭钮`；
 - 高度自适应：渲染层 `reportHeight()` 量卡片高度 → `reminder:resize` → 主进程钳制到 44~220px 后 `setBounds`，正中间位置按新高度重新居中；窗口等首次上报后才 `show()`（250ms 兜底），避免「先空卡后跳动」；
 - **注意**：Windows 透明无边框窗口有约 9px 不可见 inset（实测像素偏移），所以 `body` 顶部不留 padding，改留底部 16px 给阴影，否则卡片底部圆角会被窗口下沿裁掉；
-- 复现/验证：`powershell -ExecutionPolicy Bypass -File scripts/repro-reminder.ps1`（三位置同时弹窗并截图）→ `scripts/analyze-screenshot.ps1`（像素量卡片包围盒与圆角）→ `scripts/crop-shot.ps1`（裁剪局部放大查看）。截图脚本必须**先声明 DPI 感知再加载 WinForms**，否则 `Screen.Bounds` 是逻辑像素而 `CopyFromScreen` 抓的是物理像素，高 DPI 屏下只能拍到屏幕左上角 1/4。
+- 复现/验证：`powershell -ExecutionPolicy Bypass -File scripts/repro-reminder.ps1`（**默认只复现弹窗，不截图、不动鼠标、不抢焦点**；需要截图时显式加 `-Capture`，会移动鼠标到主屏中心并在结束后复位）→ 需要像素级校验时用 `scripts/analyze-screenshot.ps1`（量卡片包围盒与圆角）与 `scripts/crop-shot.ps1`（裁剪局部放大查看）。截图脚本必须**先声明 DPI 感知再加载 WinForms**，否则 `Screen.Bounds` 是逻辑像素而 `CopyFromScreen` 抓的是物理像素，高 DPI 屏下只能拍到屏幕左上角 1/4。
+
+## 下次提醒时间自动刷新
+
+- 调度器每次触发提醒都会推进该任务的 `nextFireAt`，`ConfigStore.setNextFireAt()` 在值真正变化时通过 `subscribeState` 通知主进程；
+- 主进程随即广播 `schedule:changed`（含全部任务的 `nextFireAt` 快照），渲染层 `applySchedule()` 整体替换——**提醒弹窗出现的同时，主窗口的「下次提醒」即刷新为下一次**，无需用户手动操作；
+- 同样覆盖的场景：snooze（改为 N 分钟后）、删除任务（清除其状态）、配置变更重算；
+- 窗口长时间隐藏期间调度仍在推进，重新显示主窗口时会补推一次快照（`showMainWindow()` → `broadcastSchedule()`）；
+- 验证（纯日志，不动鼠标）：`powershell -ExecutionPolicy Bypass -File scripts/verify-schedule-push.ps1`，输出应为 `position log lines: N, fire+push pairs: N`。
 
 ## 默认配置（免配置开箱即用）
 
@@ -188,7 +196,8 @@ scripts/
 ├── gen-icon.ps1             # 图标生成（System.Drawing）
 ├── make-ico.mjs             # PNG → ICO 打包
 ├── smoke-test.ps1           # 冒烟测试
-├── repro-reminder.ps1       # 复现三位置提醒弹窗并截图（DPI 感知）
+├── repro-reminder.ps1       # 复现三位置提醒弹窗（默认不截图；加 -Capture 才截图）
+├── verify-schedule-push.ps1 # 验证「触发提醒 → 调度快照推送」链路（纯日志，不动鼠标）
 ├── analyze-screenshot.ps1   # 像素级分析截图（卡片包围盒/圆角）
 └── crop-shot.ps1            # 截图裁剪工具
 ```
@@ -200,6 +209,7 @@ scripts/
 | `config:get` / `task:save` / `task:delete` / `settings:update` | R → M | 配置读写（唯一写入口在主进程） |
 | `config:changed` | M → R | 配置变更广播 |
 | `schedule:snapshot` | R → M | 查询各任务下次触发时间 |
+| `schedule:changed` | M → R | 调度状态变化推送（触发提醒/snooze 后刷新「下次提醒」） |
 | `app:paths` / `app:openUserData` | R → M | 路径查询 / 打开数据目录 |
 | `reminder:action` / `rest:action` | R → M | 提醒/休息按钮动作 |
 | `reminder:resize` | R → M | 渲染层上报提醒内容高度，主进程 `setBounds` 自适应窗口 |
