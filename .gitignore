@@ -1,0 +1,21 @@
+# 依赖
+node_modules/
+
+# 构建产物
+out/
+dist/
+release/
+*.tsbuildinfo
+
+# 运行/验证产物
+screenshot-*.png
+capture-*.png
+crop-*.png
+*.log
+
+# 编辑器与系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

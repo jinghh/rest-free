@@ -1,0 +1,8 @@
+# pnpm 工作区/项目配置（pnpm 10+ 从此文件读取，package.json 的 pnpm 字段已废弃）
+# - electron: 允许运行 postinstall（安装时自动下载二进制，约 250MB）
+# - electron-winstaller: 仅 Squirrel 安装器打包需要，本项目用 NSIS，显式关闭以消除安装告警
+allowBuilds:
+  electron: true
+  electron-winstaller: false
+minimumReleaseAgeExclude:
+  - electron@44.9.1

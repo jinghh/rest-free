@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>休息提醒</title>
+  </head>
+  <body>
+    <div class="msg" id="card">
+      <svg class="msg-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="#10b981" />
+        <path
+          d="M7.5 12.4l3 3L16.5 9.4"
+          fill="none"
+          stroke="#fff"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <p class="msg-text" id="task-text"><span class="msg-title" id="task-name"></span><span id="task-message"></span></p>
+      <div class="msg-actions">
+        <button class="btn-text" id="btn-rest" type="button">立即休息</button>
+        <button class="btn-text plain" id="btn-snooze" type="button">晚 5 分钟</button>
+      </div>
+      <button class="msg-close" id="btn-dismiss" type="button" title="忽略本次提醒" aria-label="忽略本次提醒">
+        <svg viewBox="0 0 24 24" width="14" height="14">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            fill="none"
+          />
+        </svg>
+      </button>
+    </div>
+    <script type="module" src="/src/reminder.ts"></script>
+  </body>
+</html>

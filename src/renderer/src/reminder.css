@@ -1,0 +1,171 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  /*
+   * 留白只为阴影服务：Windows 透明无边框窗口自带约 9px 不可见边框（inset），
+   * 顶部/左侧已被 inset 占位，故这里只留左右与底部，顶部留 0，避免卡片被窗口下沿裁掉圆角。
+   */
+  padding: 0 10px 16px;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/*
+ * Element Plus Message 风格：浅色底 + 细边框 + 小圆角 + 单行紧凑布局。
+ * 注意：透明无边框窗口下「纯色背景」图层可能被 Chromium 丢弃（白底消失），
+ * 所有背景一律使用同色 linear-gradient 走渐变绘制路径，见 README 维护须知。
+ */
+.msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 8px 8px 12px;
+  background: linear-gradient(#f0f9eb, #f0f9eb);
+  border: 1px solid #e1f3d8;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 10%);
+}
+
+.msg-icon {
+  flex: none;
+}
+
+/* 单行省略：文案再长也只占一行，空间恒定（全文见 hover title） */
+.msg-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #67c23a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-title {
+  font-weight: 600;
+  color: #3d8b4d;
+}
+
+.msg-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 文字按钮（el-button text 风格） */
+.btn-text {
+  flex: none;
+  padding: 4px 7px;
+  border: none;
+  outline: none;
+  border-radius: 4px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  color: #67c23a;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.btn-text:hover {
+  background: linear-gradient(rgb(103 194 58 / 12%), rgb(103 194 58 / 12%));
+}
+
+.btn-text:active {
+  background: linear-gradient(rgb(103 194 58 / 22%), rgb(103 194 58 / 22%));
+}
+
+.btn-text.plain {
+  color: #909399;
+}
+
+.btn-text.plain:hover {
+  background: linear-gradient(rgb(144 147 153 / 12%), rgb(144 147 153 / 12%));
+}
+
+.msg-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  outline: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #c0c4cc;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.msg-close:hover {
+  background: linear-gradient(rgb(144 147 153 / 12%), rgb(144 147 153 / 12%));
+  color: #909399;
+}
+
+/* ---------- 进入动画（按位置区分） ---------- */
+
+body[data-position='top'] .msg {
+  animation: slide-down 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body[data-position='center'] .msg {
+  animation: zoom-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body[data-position='bottom-right'] .msg {
+  animation: slide-left 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msg {
+    animation: none !important;
+  }
+}

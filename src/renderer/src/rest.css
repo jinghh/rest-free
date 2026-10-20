@@ -1,0 +1,122 @@
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  user-select: none;
+}
+
+.rest-overlay {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 同色渐变：规避透明窗口下纯色/半透明背景图层丢失（见 reminder.css 说明） */
+  background: linear-gradient(rgb(15 23 42 / 55%), rgb(15 23 42 / 55%));
+  animation: overlay-in 0.3s ease;
+}
+
+.rest-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 44px 56px;
+  background: linear-gradient(#ffffff, #ffffff);
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgb(15 23 42 / 28%);
+  text-align: center;
+  animation: card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 420px;
+}
+
+.rest-badge {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #059669;
+  background: #d1fae5;
+  border-radius: 999px;
+  padding: 4px 14px;
+}
+
+.countdown {
+  font-size: 64px;
+  font-weight: 700;
+  color: #1e293b;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.rest-message {
+  font-size: 15px;
+  color: #64748b;
+  max-width: 300px;
+}
+
+.rest-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.rest-hint {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.btn {
+  height: 38px;
+  padding: 0 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn.primary {
+  background: linear-gradient(#10b981, #10b981);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: linear-gradient(#059669, #059669);
+}
+
+.btn.ghost {
+  background: linear-gradient(#f1f5f9, #f1f5f9);
+  color: #475569;
+}
+
+.btn.ghost:hover {
+  background: linear-gradient(#e2e8f0, #e2e8f0);
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

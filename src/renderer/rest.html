@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>休息一下</title>
+  </head>
+  <body>
+    <div class="rest-overlay">
+      <div class="rest-card">
+        <div class="rest-badge">休息中</div>
+        <div class="countdown" id="countdown">05:00</div>
+        <p class="rest-message" id="rest-message"></p>
+        <div class="rest-actions">
+          <button class="btn ghost" id="btn-extend" type="button">+5 分钟</button>
+          <button class="btn primary" id="btn-done" type="button">我休息好了</button>
+        </div>
+        <p class="rest-hint">按 Esc 也可结束休息</p>
+      </div>
+    </div>
+    <script type="module" src="/src/rest.ts"></script>
+  </body>
+</html>

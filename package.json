@@ -1,0 +1,57 @@
+{
+  "name": "rest-free",
+  "version": "1.0.0",
+  "description": "定时休息提醒 PC 应用：多任务、多位置提醒、立即/稍后休息、配置持久化",
+  "main": "./out/main/index.js",
+  "author": "rest-free",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "postinstall": "node scripts/ensure-electron.mjs",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json",
+    "test:scheduler": "node --experimental-transform-types --no-warnings scripts/test-scheduler.mjs",
+    "test:config": "node --experimental-transform-types --no-warnings scripts/test-config.mjs",
+    "test": "npm run test:scheduler && npm run test:config",
+    "smoke": "powershell -ExecutionPolicy Bypass -File scripts/smoke-test.ps1",
+    "start": "electron .",
+    "gen:icon": "powershell -ExecutionPolicy Bypass -File scripts/gen-icon.ps1 && node scripts/make-ico.mjs",
+    "pack:win": "npm run build && electron-builder --win --dir",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.restfree.app",
+    "productName": "Rest-Free",
+    "files": [
+      "out/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "electron": "^44.9.1",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^6.0.0",
+    "typescript": "~5.9",
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.3.13"
+  },
+  "dependencies": {
+    "pinia": "^4.1.0",
+    "vue": "^3.5.44"
+  }
+}
