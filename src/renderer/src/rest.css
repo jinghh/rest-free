@@ -73,9 +73,17 @@ body {
 .btn {
   height: 38px;
   padding: 0 22px;
+  /* 重置浏览器默认按钮样式：去掉描边与内阴影，否则会出现一圈灰边 */
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
   transition: background 0.15s, transform 0.1s;
 }
 
