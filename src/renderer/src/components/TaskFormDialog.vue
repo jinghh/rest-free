@@ -29,7 +29,7 @@ function emptyDraft(): Draft {
   return {
     id: '',
     name: '',
-    startTime: '09:00',
+    startTime: '10:00',
     intervalMinutes: 45,
     message: '',
     position: 'center',

@@ -88,7 +88,7 @@ export const POSITION_LABELS: Record<ReminderPosition, string> = {
  * 升级此版本号即可让所有「未被用户改动」的默认任务在下次启动时更新为新模板；
  * 用户已改动（customized）或已删除（removedDefaults）的不受影响。
  */
-export const DEFAULTS_VERSION = 1
+export const DEFAULTS_VERSION = 2
 
 /**
  * 内置默认任务：免配置开箱即用。
@@ -99,7 +99,7 @@ export const DEFAULT_TASKS: Task[] = [
   {
     id: 'default-stretch',
     name: '拉伸放松',
-    startTime: '09:00',
+    startTime: '10:00',
     intervalMinutes: 15,
     message: '坐太久了，起来拉伸一下，放松身体！',
     position: 'top',
@@ -110,7 +110,7 @@ export const DEFAULT_TASKS: Task[] = [
   {
     id: 'default-water',
     name: '喝水 · 上厕所',
-    startTime: '09:00',
+    startTime: '10:00',
     intervalMinutes: 45,
     message: '该喝水了，顺便去洗手间活动一下吧',
     position: 'center',

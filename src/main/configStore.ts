@@ -34,7 +34,7 @@ function normalizeTask(raw: unknown): Task | null {
   const t = raw as Partial<Task>
   if (typeof t.name !== 'string' || t.name.trim().length === 0) return null
   if (typeof t.message !== 'string' || t.message.trim().length === 0) return null
-  const startTime = parseHHmm(t.startTime) ?? '09:00'
+  const startTime = parseHHmm(t.startTime) ?? '10:00'
   const intervalMinutes = clamp(t.intervalMinutes, 1, 1440, 45)
   const now = Date.now()
   return {

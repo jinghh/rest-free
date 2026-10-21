@@ -177,7 +177,7 @@ test('normalizeConfig 边界：脏数据剔除与字段兜底', () => {
   assert.equal(cfg.tasks.length, 2, '脏任务应被剔除')
   assert.equal(cfg.tasks[0].intervalMinutes, 1440, '越界间隔应钳制')
   assert.equal(cfg.tasks[0].position, 'center', '非法位置应回落')
-  assert.equal(cfg.tasks[0].startTime, '09:00', '非法时间应回落')
+  assert.equal(cfg.tasks[0].startTime, '10:00', '非法时间应回落')
   assert.equal(cfg.tasks[1].customized, true, 'customized 应保留')
   assert.equal(cfg.settings.snoozeMinutes, 60, '设置应钳制')
   assert.equal(cfg.defaultsVersion, 0, '非法 defaultsVersion 应回落 0')
@@ -231,6 +231,48 @@ test('删除任务时同步清除其调度状态并通知', () => {
   store.deleteTask('default-water')
   assert.equal(store.getNextFireAt('default-water'), undefined, '状态应被清除')
   assert.equal(notified, 1, '删除任务应通知刷新快照')
+})
+
+// ---------- 10. 模板变更后未定制任务自动跟随（DEFAULTS_VERSION 升级） ----------
+test('默认模板变更时未定制任务自动跟随开始时间', () => {
+  resetFiles({
+    version: 1,
+    defaultsVersion: DEFAULTS_VERSION - 1, // 模拟旧版本用户配置
+    tasks: [
+      {
+        id: 'default-stretch',
+        name: '拉伸放松',
+        startTime: '09:00',
+        intervalMinutes: 15,
+        message: '旧文案',
+        position: 'top',
+        enabled: true,
+        createdAt: 1,
+        updatedAt: 1
+      },
+      {
+        id: 'default-water',
+        name: '喝水 · 上厕所',
+        startTime: '09:00',
+        intervalMinutes: 45,
+        message: '用户自定义文案',
+        position: 'center',
+        enabled: true,
+        createdAt: 1,
+        updatedAt: 1,
+        customized: true
+      }
+    ],
+    settings: {},
+    removedDefaults: []
+  })
+  const cfg = new ConfigStore().getConfig()
+  assert.equal(cfg.defaultsVersion, DEFAULTS_VERSION, 'defaultsVersion 应升级到最新')
+  const stretch = cfg.tasks.find((t) => t.id === 'default-stretch')
+  assert.equal(stretch.startTime, '10:00', '未定制的默认任务应跟随新模板的开始时间')
+  const water = cfg.tasks.find((t) => t.id === 'default-water')
+  assert.equal(water.startTime, '09:00', '用户定制过的任务不应被覆盖')
+  assert.equal(water.message, '用户自定义文案', '用户定制过的文案不应被覆盖')
 })
 
 console.log(`\n${passed} passed, ${failed} failed`)
