@@ -115,6 +115,21 @@ function commitBoolean(key: keyof Settings, checked: boolean): void {
             </span>
           </label>
 
+          <label class="field switch-row">
+            <span class="field-label">
+              全屏休息倒计时
+              <small>点「立即休息」后弹出全屏倒计时；关闭则静默休息，仅托盘显示剩余时间</small>
+            </span>
+            <span class="switch">
+              <input
+                type="checkbox"
+                :checked="settings.showRestCountdown"
+                @change="commitBoolean('showRestCountdown', ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="slider" />
+            </span>
+          </label>
+
           <div class="field">
             <span class="field-label">配置文件</span>
             <div class="path-row">

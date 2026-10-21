@@ -53,12 +53,20 @@ function createStore(tasks, settings) {
 
 function createReminders() {
   const fired = []
+  const calls = { rest: 0, closeRest: 0 }
   return {
     fired,
+    calls,
     showReminder: (t) => fired.push(t.id),
     closeReminder: () => {},
-    startRest: () => {},
-    isResting: () => false
+    startRest: () => {
+      calls.rest++
+    },
+    closeRest: () => {
+      calls.closeRest++
+    },
+    isResting: () => false,
+    getRestEndAt: () => 0
   }
 }
 
@@ -67,7 +75,7 @@ function primeState(store, nextFireAt) {
   store.state.t1 = { nextFireAt, updatedAt: Date.now() + 10 * MINUTE }
 }
 
-const defaultSettings = { snoozeMinutes: 5, restMinutes: 5, doNotDisturb: false }
+const defaultSettings = { snoozeMinutes: 5, restMinutes: 5, doNotDisturb: false, showRestCountdown: true }
 
 let passed = 0
 let failed = 0
@@ -216,6 +224,50 @@ await test('startTime 已过时 nextFireAt = 今日下一档（同步断言）',
   // 00:01 + k 分钟 => 分钟数与 00:01 同余（mod 1 恒真），验证「> now 且是整分」
   assert.equal(d.getSeconds(), 0, 'nextFireAt 应落在整分（00:01 + k*1min）')
   assert.equal(d.getMilliseconds(), 0, 'nextFireAt 应为整毫秒')
+  s.stop()
+})
+
+// ---------- 9. 休息模式：全屏倒计时 vs 静默休息 ----------
+await test('开启全屏倒计时：点休息弹出遮罩并进入休息状态', async () => {
+  const task = makeTask()
+  const store = createStore([task], { ...defaultSettings, showRestCountdown: true })
+  const reminders = createReminders()
+  const s = new Scheduler(store, reminders)
+  s.handleReminderAction('t1', 'rest')
+  assert.equal(reminders.calls.rest, 1, '应启动全屏休息遮罩')
+  assert.equal(s.isResting(), true, '应处于休息状态')
+  s.stop()
+})
+
+await test('关闭全屏倒计时：静默休息、到点自动恢复并广播状态', async () => {
+  const task = makeTask()
+  // restMinutes 取 0.02 分钟（1.2 秒）以便测试快速到期
+  const store = createStore([task], { ...defaultSettings, showRestCountdown: false, restMinutes: 0.02 })
+  const reminders = createReminders()
+  const states = []
+  const s = new Scheduler(store, reminders, (st) => states.push(st))
+  s.handleReminderAction('t1', 'rest')
+  assert.equal(reminders.calls.rest, 0, '静默休息不应启动全屏遮罩')
+  assert.equal(s.isResting(), true, '应处于静默休息状态')
+  assert.ok(states.some((x) => x.resting), '应广播休息中状态')
+  assert.ok(states.some((x) => x.remainMs > 0), '休息中应带剩余时间')
+  await sleep(1500)
+  assert.equal(s.isResting(), false, '到点应自动结束休息并恢复调度')
+  assert.ok(states.some((x) => !x.resting), '应广播休息结束状态')
+  s.stop()
+})
+
+await test('手动结束休息：立即恢复调度并关闭遮罩', async () => {
+  const task = makeTask()
+  const store = createStore([task], { ...defaultSettings, showRestCountdown: true, restMinutes: 5 })
+  const reminders = createReminders()
+  const states = []
+  const s = new Scheduler(store, reminders, (st) => states.push(st))
+  s.handleReminderAction('t1', 'rest')
+  s.endRest()
+  assert.equal(s.isResting(), false, '应立即结束休息')
+  assert.equal(reminders.calls.closeRest, 1, '应关闭休息遮罩')
+  assert.ok(states.some((x) => !x.resting), '应广播休息结束状态')
   s.stop()
 })
 

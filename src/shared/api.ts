@@ -13,6 +13,14 @@ export interface RestData {
   endAt: number
 }
 
+/** 休息状态（静默休息时供主窗口/托盘展示） */
+export interface RestState {
+  /** 是否处于休息中 */
+  resting: boolean
+  /** 剩余毫秒（resting 为 false 时为 0） */
+  remainMs: number
+}
+
 /** 应用路径信息 */
 export interface AppPaths {
   userData: string
@@ -50,4 +58,8 @@ export interface Api {
   onRestData(cb: (data: RestData) => void): () => void
   onRestTick(cb: (remainMs: number) => void): () => void
   restAction(action: RestAction): void
+  /** 休息状态推送（静默休息 / 全屏倒计时期间每秒更新） */
+  onRestState(cb: (state: RestState) => void): () => void
+  /** 提前结束休息 */
+  restEnd(): void
 }

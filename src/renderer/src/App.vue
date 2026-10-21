@@ -5,7 +5,7 @@ import TitleBar from './components/TitleBar.vue'
 import TaskCard from './components/TaskCard.vue'
 import TaskFormDialog from './components/TaskFormDialog.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
-import { formatNextFireAt } from './format'
+import { formatNextFireAt, formatCountdown } from './format'
 import { isDefaultTaskId, type Task, type TaskDraft } from '@shared/types'
 
 const store = useAppStore()
@@ -15,6 +15,7 @@ const editing = ref<Task | null>(null)
 const settingsVisible = ref(false)
 let unsubscribe: (() => void) | null = null
 let unsubscribeSchedule: (() => void) | null = null
+let unsubscribeRest: (() => void) | null = null
 
 onMounted(async () => {
   await store.load()
@@ -27,6 +28,10 @@ onMounted(async () => {
   unsubscribeSchedule = window.api.onScheduleChanged((snapshot) => {
     store.applySchedule(snapshot)
   })
+  // 休息状态推送：静默休息（未开启全屏倒计时）时展示剩余时间
+  unsubscribeRest = window.api.onRestState((state) => {
+    store.applyRestState(state)
+  })
 })
 
 onUnmounted(() => {
@@ -34,6 +39,8 @@ onUnmounted(() => {
   unsubscribe = null
   unsubscribeSchedule?.()
   unsubscribeSchedule = null
+  unsubscribeRest?.()
+  unsubscribeRest = null
 })
 
 function openCreate(): void {
@@ -72,6 +79,11 @@ async function onToggleDnd(): Promise<void> {
 function nextText(ts: number | undefined): string {
   return formatNextFireAt(ts)
 }
+
+/** 提前结束休息（静默休息时使用） */
+function endRest(): void {
+  window.api.restEnd()
+}
 </script>
 
 <template>
@@ -86,6 +98,12 @@ function nextText(ts: number | undefined): string {
         </div>
         <button class="btn primary" type="button" @click="openCreate">＋ 新建任务</button>
       </header>
+
+      <div v-if="store.restState.resting" class="rest-banner">
+        <span class="rest-dot" />
+        <span>休息中 · 剩余 {{ formatCountdown(store.restState.remainMs) }}，期间不会弹出提醒</span>
+        <button class="btn text" type="button" @click="endRest">结束休息</button>
+      </div>
 
       <div v-if="store.tasks.length" class="task-grid">
         <TaskCard

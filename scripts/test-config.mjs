@@ -180,6 +180,7 @@ test('normalizeConfig 边界：脏数据剔除与字段兜底', () => {
   assert.equal(cfg.tasks[0].startTime, '10:00', '非法时间应回落')
   assert.equal(cfg.tasks[1].customized, true, 'customized 应保留')
   assert.equal(cfg.settings.snoozeMinutes, 60, '设置应钳制')
+  assert.equal(cfg.settings.showRestCountdown, true, '缺失 showRestCountdown 应回落为 true（保持弹全屏倒计时）')
   assert.equal(cfg.defaultsVersion, 0, '非法 defaultsVersion 应回落 0')
   assert.deepEqual(cfg.removedDefaults, ['x', 'default-water'], 'removedDefaults 应过滤非字符串')
 })
@@ -273,6 +274,17 @@ test('默认模板变更时未定制任务自动跟随开始时间', () => {
   const water = cfg.tasks.find((t) => t.id === 'default-water')
   assert.equal(water.startTime, '09:00', '用户定制过的任务不应被覆盖')
   assert.equal(water.message, '用户自定义文案', '用户定制过的文案不应被覆盖')
+})
+
+// ---------- 11. 全屏倒计时开关：显式 false 需被保留 ----------
+test('showRestCountdown 显式关闭时保留为 false', () => {
+  resetFiles()
+  const store = new ConfigStore()
+  store.updateSettings({ showRestCountdown: false })
+  const cfg = store.getConfig()
+  assert.equal(cfg.settings.showRestCountdown, false, '显式关闭应被保留')
+  const reread = new ConfigStore().getConfig()
+  assert.equal(reread.settings.showRestCountdown, false, '重新加载后仍为 false')
 })
 
 console.log(`\n${passed} passed, ${failed} failed`)

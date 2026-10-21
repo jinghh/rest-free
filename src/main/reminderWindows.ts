@@ -61,6 +61,21 @@ export class ReminderManager {
     return this.restWindow !== null && !this.restWindow.isDestroyed()
   }
 
+  /** 关闭休息遮罩（提前结束休息时调用） */
+  closeRest(): void {
+    const win = this.restWindow
+    if (!win || win.isDestroyed()) return
+    win.close()
+  }
+
+  /**
+   * 休息遮罩的结束时间戳（含「+5 分钟」延长后的最新值）；
+   * 没有遮罩（静默休息）时返回 0，由调度器用自己的结束时间兜底。
+   */
+  getRestEndAt(): number {
+    return this.restWindow && !this.restWindow.isDestroyed() ? this.restEndAt : 0
+  }
+
   // ---------- 提醒窗口 ----------
 
   showReminder(task: Task): void {

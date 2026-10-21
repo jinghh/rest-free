@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { Api, ReminderData, RestData } from '../shared/api'
+import type { Api, ReminderData, RestData, RestState } from '../shared/api'
 import type { AppConfig, ReminderAction, RestAction, Settings, TaskDraft } from '../shared/types'
 
 /** 订阅主进程频道，返回取消订阅函数 */
@@ -37,7 +37,9 @@ const api: Api = {
   // 休息窗口
   onRestData: (cb) => subscribe<RestData>('rest:data', cb),
   onRestTick: (cb) => subscribe<number>('rest:tick', cb),
-  restAction: (action: RestAction) => ipcRenderer.send('rest:action', { action })
+  restAction: (action: RestAction) => ipcRenderer.send('rest:action', { action }),
+  onRestState: (cb) => subscribe<RestState>('rest:state', cb),
+  restEnd: () => ipcRenderer.send('rest:end')
 }
 
 contextBridge.exposeInMainWorld('api', api)

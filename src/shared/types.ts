@@ -40,6 +40,8 @@ export interface Settings {
   soundEnabled: boolean
   /** 勿扰模式：开启期间不弹出提醒 */
   doNotDisturb: boolean
+  /** 点「立即休息」后是否弹出全屏倒计时遮罩；关闭则静默休息（后台计时） */
+  showRestCountdown: boolean
 }
 
 /** 应用配置（config.json 结构） */
@@ -73,7 +75,8 @@ export const DEFAULT_SETTINGS: Settings = {
   restMinutes: 5,
   launchAtStartup: false,
   soundEnabled: false,
-  doNotDisturb: false
+  doNotDisturb: false,
+  showRestCountdown: true
 }
 
 /** 提醒位置元信息（主进程与渲染层共用） */

@@ -84,6 +84,11 @@ export function registerIpc(deps: {
     reminders.handleRestAction(payload.action)
   })
 
+  // 提前结束休息（静默休息时用于手动恢复调度）
+  ipcMain.on('rest:end', () => {
+    scheduler.endRest()
+  })
+
   ipcMain.on('window:minimize', () => {
     getMainWindow()?.minimize()
   })

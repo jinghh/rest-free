@@ -77,7 +77,9 @@ export function normalizeSettings(raw: unknown): Settings {
     restMinutes: clamp(s.restMinutes, 1, 60, DEFAULT_SETTINGS.restMinutes),
     launchAtStartup: s.launchAtStartup === true,
     soundEnabled: s.soundEnabled === true,
-    doNotDisturb: s.doNotDisturb === true
+    doNotDisturb: s.doNotDisturb === true,
+    // 缺省为 true：老配置没有该字段时保持原有「弹全屏倒计时」行为
+    showRestCountdown: s.showRestCountdown !== false
   }
 }
 

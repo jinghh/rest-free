@@ -88,6 +88,22 @@ npm run dist:win   # 产出 NSIS 安装包到 dist/
 - **注意**：Windows 透明无边框窗口有约 9px 不可见 inset（实测像素偏移），所以 `body` 顶部不留 padding，改留底部 16px 给阴影，否则卡片底部圆角会被窗口下沿裁掉；
 - 复现/验证：`powershell -ExecutionPolicy Bypass -File scripts/repro-reminder.ps1`（**默认只复现弹窗，不截图、不动鼠标、不抢焦点**；需要截图时显式加 `-Capture`，会移动鼠标到主屏中心并在结束后复位）→ 需要像素级校验时用 `scripts/analyze-screenshot.ps1`（量卡片包围盒与圆角）与 `scripts/crop-shot.ps1`（裁剪局部放大查看）。截图脚本必须**先声明 DPI 感知再加载 WinForms**，否则 `Screen.Bounds` 是逻辑像素而 `CopyFromScreen` 抓的是物理像素，高 DPI 屏下只能拍到屏幕左上角 1/4。
 
+## 静默休息（不弹全屏倒计时）
+
+设置中新增开关「全屏休息倒计时」（配置项 `showRestCountdown`，默认开启）：
+
+| 开关 | 点「立即休息」后的行为 |
+| --- | --- |
+| 开启（默认） | 弹出全屏倒计时遮罩，遮罩内可「我休息好了」/「+5 分钟」/`Esc` 结束 |
+| 关闭 | **静默休息**：不弹遮罩，后台计时 `restMinutes`；期间不弹其他提醒，到点自动恢复调度 |
+
+静默休息时用户仍能感知状态与手动结束：
+
+- 托盘 tooltip 显示「休息中 04:32」，托盘右键菜单出现「结束休息」；
+- 主窗口顶部显示休息状态条「休息中 · 剩余 04:32」+「结束休息」按钮。
+
+实现要点：休息状态与倒计时遮罩解耦——`Scheduler` 持有 `resting` 状态与 `restEndAt`，遮罩只是它的一种呈现方式；`rest:state` 通道每秒推送剩余时间，`rest:end` 可提前结束。
+
 ## 下次提醒时间自动刷新
 
 - 调度器每次触发提醒都会推进该任务的 `nextFireAt`，`ConfigStore.setNextFireAt()` 在值真正变化时通过 `subscribeState` 通知主进程；
@@ -152,7 +168,8 @@ node scripts/verify-defaults.mjs
     "restMinutes": 5,
     "launchAtStartup": false,
     "soundEnabled": false,
-    "doNotDisturb": false
+    "doNotDisturb": false,
+    "showRestCountdown": true
   },
   "removedDefaults": []
 }
@@ -214,6 +231,8 @@ scripts/
 | `reminder:action` / `rest:action` | R → M | 提醒/休息按钮动作 |
 | `reminder:resize` | R → M | 渲染层上报提醒内容高度，主进程 `setBounds` 自适应窗口 |
 | `reminder:data` / `rest:data` / `rest:tick` | M → R | 窗口数据与倒计时驱动 |
+| `rest:state` | M → R | 休息状态推送（休息中 + 剩余时间） |
+| `rest:end` | R → M | 提前结束休息 |
 | `window:minimize` / `window:close` | R → M | 主窗口控制 |
 
 ## 后续计划

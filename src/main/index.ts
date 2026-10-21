@@ -3,7 +3,7 @@ import { ConfigStore } from './configStore'
 import { Scheduler } from './scheduler'
 import { ReminderManager } from './reminderWindows'
 import { registerIpc } from './ipc'
-import { createTray } from './tray'
+import { createTray, type TrayApi } from './tray'
 import { applyAutoStart } from './autostart'
 import { logger } from './logger'
 import { loadRenderer, resourcePath, sharedWebPreferences } from './utils'
@@ -16,6 +16,8 @@ let scheduler: Scheduler
 let reminders: ReminderManager
 /** registerIpc 返回的调度快照广播句柄 */
 let broadcastSchedule: (() => void) | null = null
+/** 托盘句柄：休息状态变化时重建菜单/提示 */
+let trayApi: TrayApi | null = null
 
 // 单实例：重复启动时聚焦已有窗口
 if (!app.requestSingleInstanceLock()) {
@@ -39,7 +41,12 @@ function bootstrap(): void {
   applyAutoStart(store.getConfig().settings.launchAtStartup)
 
   reminders = new ReminderManager(store)
-  scheduler = new Scheduler(store, reminders)
+  scheduler = new Scheduler(store, reminders, (state) => {
+    // 休息状态推送给主窗口（静默休息时展示剩余时间）
+    const win = mainWindow
+    if (win && !win.isDestroyed()) win.webContents.send('rest:state', state)
+    trayApi?.rebuild()
+  })
 
   mainWindow = createMainWindow()
 
@@ -53,14 +60,16 @@ function bootstrap(): void {
     }
   }).broadcastSchedule
 
-  // 托盘实例随应用生命周期常驻，无需保存引用
-  createTray(
+  // 托盘实例随应用生命周期常驻
+  trayApi = createTray(
     store,
     () => showMainWindow(),
     () => {
       forceQuit = true
       app.quit()
-    }
+    },
+    () => scheduler.getRestState(),
+    () => scheduler.endRest()
   )
 
   scheduler.start()

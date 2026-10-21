@@ -1,4 +1,5 @@
 import type { ReminderAction, Task } from '../shared/types'
+import type { RestState } from '../shared/api'
 import type { ConfigStore } from './configStore'
 import { logger } from './logger'
 
@@ -55,7 +56,10 @@ export interface ReminderHost {
   showReminder: (task: Task) => void
   closeReminder: (taskId: string) => void
   startRest: (task: Task, onDone: () => void) => void
+  closeRest: () => void
   isResting: () => boolean
+  /** 休息遮罩的结束时间戳（0 表示没有遮罩） */
+  getRestEndAt: () => number
 }
 
 /**
@@ -69,10 +73,18 @@ export class Scheduler {
   private timer: NodeJS.Timeout | null = null
   private running = false
   private resting = false
+  /** 本次休息的结束时间戳（静默休息与遮罩休息共用） */
+  private restEndAt = 0
+  /** 静默休息的到期定时器（不弹全屏遮罩时使用） */
+  private silentRestTimer: NodeJS.Timeout | null = null
+  /** 休息状态广播定时器（每秒推送剩余时间） */
+  private restStateTimer: NodeJS.Timeout | null = null
 
   constructor(
     private readonly store: ConfigStore,
-    private readonly reminders: ReminderHost
+    private readonly reminders: ReminderHost,
+    /** 休息状态变化回调（用于推送给主窗口 / 托盘） */
+    private readonly onRestState: (state: RestState) => void = () => {}
   ) {}
 
   start(): void {
@@ -88,6 +100,11 @@ export class Scheduler {
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
+    }
+    this.stopRestStateBroadcast()
+    if (this.silentRestTimer) {
+      clearTimeout(this.silentRestTimer)
+      this.silentRestTimer = null
     }
   }
 
@@ -138,17 +155,86 @@ export class Scheduler {
     }
 
     if (action === 'rest') {
+      const { restMinutes, showRestCountdown } = this.store.getConfig().settings
+      this.restEndAt = Date.now() + restMinutes * MINUTE
       this.setResting(true)
-      this.reminders.startRest(task, () => this.setResting(false))
+      if (showRestCountdown) {
+        // 弹出全屏倒计时遮罩，遮罩关闭时回调恢复调度
+        this.reminders.startRest(task, () => this.setResting(false))
+      } else {
+        // 静默休息：不弹遮罩，后台计时，到点自动恢复调度
+        this.startSilentRest(restMinutes)
+        logger.info(`任务「${task.name}」进入静默休息（${restMinutes} 分钟，不弹倒计时层）`)
+      }
     }
     // dismiss：无需处理，nextFireAt 已在触发时推进
+  }
+
+  /** 静默休息：后台计时，到点自动结束休息 */
+  private startSilentRest(minutes: number): void {
+    if (this.silentRestTimer) clearTimeout(this.silentRestTimer)
+    this.silentRestTimer = setTimeout(() => {
+      this.silentRestTimer = null
+      this.setResting(false)
+    }, minutes * MINUTE)
+  }
+
+  /** 提前结束休息（托盘 / 主窗口的「结束休息」） */
+  endRest(): void {
+    if (!this.resting) return
+    // 若遮罩开着，一并关掉；遮罩关闭回调会再次调用 setResting(false)，幂等
+    this.reminders.closeRest()
+    this.setResting(false)
+    logger.info('休息已手动结束')
+  }
+
+  /** 当前是否处于休息状态 */
+  isResting(): boolean {
+    return this.resting
+  }
+
+  /** 当前休息状态（供渲染层/托盘展示剩余时间） */
+  getRestState(): RestState {
+    // 遮罩模式下以遮罩的结束时间为准（含「+5 分钟」延长），静默模式用调度器自己的时间
+    const endAt = this.reminders.getRestEndAt() || this.restEndAt
+    return {
+      resting: this.resting,
+      remainMs: this.resting ? Math.max(0, endAt - Date.now()) : 0
+    }
   }
 
   /** 休息遮罩生命周期：休息期间暂停其他任务触发，结束后立即检查暂缓的触发 */
   setResting(resting: boolean): void {
     this.resting = resting
+    if (resting) {
+      this.startRestStateBroadcast()
+    } else {
+      this.stopRestStateBroadcast()
+      if (this.silentRestTimer) {
+        clearTimeout(this.silentRestTimer)
+        this.silentRestTimer = null
+      }
+      this.restEndAt = 0
+      this.onRestState({ resting: false, remainMs: 0 })
+    }
     if (!resting) {
       this.tick()
+    }
+  }
+
+  /** 休息期间每秒广播剩余时间 */
+  private startRestStateBroadcast(): void {
+    this.stopRestStateBroadcast()
+    this.onRestState(this.getRestState())
+    this.restStateTimer = setInterval(() => {
+      this.onRestState(this.getRestState())
+    }, 1000)
+  }
+
+  private stopRestStateBroadcast(): void {
+    if (this.restStateTimer) {
+      clearInterval(this.restStateTimer)
+      this.restStateTimer = null
     }
   }
 
