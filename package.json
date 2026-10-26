@@ -5,6 +5,14 @@
   "main": "./out/main/index.js",
   "author": "rest-free",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jinghh/rest-free.git"
+  },
+  "homepage": "https://github.com/jinghh/rest-free#readme",
+  "bugs": {
+    "url": "https://github.com/jinghh/rest-free/issues"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -24,6 +32,7 @@
   "build": {
     "appId": "com.restfree.app",
     "productName": "Rest-Free",
+    "artifactName": "Rest-Free-${version}-setup.${ext}",
     "files": [
       "out/**/*"
     ],

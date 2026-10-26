@@ -1,0 +1,79 @@
+name: Release
+
+# 打 tag（形如 v1.0.0）推送后自动构建 Windows 安装包并发布到 GitHub Release；
+# 也可在 Actions 页面手动触发（workflow_dispatch）并指定已存在的 tag。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（形如 v1.0.0，需已推送到仓库）'
+        required: true
+        type: string
+
+permissions:
+  contents: write # 创建 Release 并上传安装包
+
+jobs:
+  build-win:
+    name: 构建并发布 Windows 安装包
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm run typecheck
+
+      - name: 回归测试
+        run: pnpm run test
+
+      - name: 构建安装包（NSIS）
+        run: pnpm run dist:win
+
+      - name: 校验产物存在
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem dist -Filter *-setup.exe
+          if (-not $exe) { throw '未找到生成的安装包 dist/*-setup.exe' }
+          $exe | ForEach-Object { Write-Host ("产物: {0} ({1:N1} MB)" -f $_.Name, ($_.Length / 1MB)) }
+
+      - name: 发布到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Rest-Free ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          append_body: true
+          body: |
+            ## 下载安装（Windows x64）
+
+            下载下方 `Rest-Free-*-setup.exe`，双击安装即可（无需管理员权限，默认装到用户目录）。
+
+            - **系统要求**：Windows 10 / 11（x64）
+            - **卸载**：设置 → 应用 → Rest-Free；卸载**不会**删除你的任务配置
+            - **SmartScreen**：安装包未购买代码签名证书，首次运行可能提示「未知发布者」，点「更多信息 → 仍要运行」即可
+          files: |
+            dist/*-setup.exe
+            dist/*-setup.exe.blockmap
+            dist/latest.yml

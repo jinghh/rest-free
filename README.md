@@ -1,8 +1,24 @@
 # Rest-Free 定时休息提醒
 
+[![Release](https://img.shields.io/github/v/release/jinghh/rest-free?display_name=tag&sort=semver)](https://github.com/jinghh/rest-free/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/jinghh/rest-free/total)](https://github.com/jinghh/rest-free/releases)
+[![License](https://img.shields.io/github/license/jinghh/rest-free)](LICENSE)
+
 一款轻量的 Windows 桌面应用：按计划提醒你起身休息，避免久坐。支持多任务并行、三种提醒位置、立即/稍后休息，配置以 `config.json` 持久化，升级不丢失。
 
 需求文档见 [docs/需求文档.md](docs/需求文档.md)。
+
+## 下载安装（普通用户）
+
+前往 **[Releases 页面](https://github.com/jinghh/rest-free/releases/latest)** 下载最新的 `Rest-Free-*-setup.exe`，双击安装即可。
+
+| 项目 | 说明 |
+| --- | --- |
+| 系统要求 | Windows 10 / 11（x64） |
+| 安装位置 | 默认装到当前用户目录，**无需管理员权限**，可选自定义目录 |
+| 升级安装 | 直接安装新版本覆盖即可，任务配置保留 |
+| 卸载 | 设置 → 应用 → Rest-Free；**卸载不会删除** `%APPDATA%/rest-free` 下的任务配置 |
+| SmartScreen 提示 | 安装包未购买代码签名证书，首次运行可能出现「未知发布者」，点「更多信息 → 仍要运行」 |
 
 ## 功能特性
 
@@ -62,10 +78,31 @@ npm run test:config     # 配置存储 8 例：默认任务注入、customized �
 
 ```bash
 npm run gen:icon   # 重新生成图标（resources/*.png + icon.ico）
-npm run dist:win   # 产出 NSIS 安装包到 dist/
+npm run dist:win   # 产出 NSIS 安装包 dist/Rest-Free-<version>-setup.exe
+npm run pack:win   # 只出免安装目录 dist/win-unpacked/Rest-Free.exe
 ```
 
 安装包默认安装到用户目录，卸载**不会**删除用户配置（`deleteAppDataOnUninstall: false`）。
+
+### 发布新版本（GitHub Releases 自动出包）
+
+推送形如 `v*` 的 tag 即可触发 `.github/workflows/release.yml`：在 Windows runner 上跑类型检查 + 回归测试 → 构建 NSIS 安装包 → 创建 GitHub Release 并上传 `Rest-Free-<version>-setup.exe`。
+
+```bash
+# 1) 改版本号（需与 tag 一致）
+npm version 1.0.1 --no-git-tag-version
+git commit -am "chore: 发布 v1.0.1"
+# 2) 打 tag 并推送，触发自动构建发布
+git tag v1.0.1
+git push origin main --tags
+```
+
+注意事项：
+
+- workflow 使用仓库自带的 `GITHUB_TOKEN`（`permissions: contents: write`），**无需配置任何 secret**；
+- 若只想要安装包不发 Release，本地跑 `npm run dist:win`，把 `dist/*-setup.exe` 手动拖到 Release 页面即可；
+- 未做代码签名：如需消除 SmartScreen 警告，需自备代码签名证书并在 `build.win` 中配置 `certificateFile` / `certificatePassword`（CI 里用 secret 传入）；
+- Release 附件体积约 108 MB（Electron 内置 Chromium，属正常范围）。
 
 ## Windows 透明窗口渲染注意事项
 
@@ -234,6 +271,10 @@ scripts/
 | `rest:state` | M → R | 休息状态推送（休息中 + 剩余时间） |
 | `rest:end` | R → M | 提前结束休息 |
 | `window:minimize` / `window:close` | R → M | 主窗口控制 |
+
+## 许可证
+
+[MIT](LICENSE)
 
 ## 后续计划
 
