@@ -16,6 +16,7 @@ const settingsVisible = ref(false)
 let unsubscribe: (() => void) | null = null
 let unsubscribeSchedule: (() => void) | null = null
 let unsubscribeRest: (() => void) | null = null
+let unsubscribeUpdate: (() => void) | null = null
 
 onMounted(async () => {
   await store.load()
@@ -32,6 +33,11 @@ onMounted(async () => {
   unsubscribeRest = window.api.onRestState((state) => {
     store.applyRestState(state)
   })
+  // 自动更新状态：初始拉一次当前版本，之后由主进程推送
+  store.applyUpdateState(await window.api.getUpdateState())
+  unsubscribeUpdate = window.api.onUpdateState((state) => {
+    store.applyUpdateState(state)
+  })
 })
 
 onUnmounted(() => {
@@ -41,6 +47,8 @@ onUnmounted(() => {
   unsubscribeSchedule = null
   unsubscribeRest?.()
   unsubscribeRest = null
+  unsubscribeUpdate?.()
+  unsubscribeUpdate = null
 })
 
 function openCreate(): void {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useAppStore } from '../store'
-import type { AppPaths } from '@shared/api'
+import type { AppPaths, UpdateState } from '@shared/api'
 import type { Settings } from '@shared/types'
 
 const props = defineProps<{ visible: boolean }>()
@@ -34,6 +34,45 @@ function commitNumber(value: string, key: 'snoozeMinutes' | 'restMinutes'): void
 
 function commitBoolean(key: keyof Settings, checked: boolean): void {
   void store.updateSettings({ [key]: checked } satisfies Partial<Settings>)
+}
+
+// ---------- 自动更新 ----------
+
+const update = computed<UpdateState>(() => store.updateState)
+const checking = computed(() => update.value.status === 'checking')
+
+/** 更新状态提示文案 */
+const updateHint = computed(() => {
+  const s = update.value
+  if (s.unsupported) return '开发模式不支持自动更新（仅安装版可用）'
+  switch (s.status) {
+    case 'checking':
+      return '正在检查更新…'
+    case 'available':
+      return `发现新版本 v${s.version}，点击「下载更新」后自动安装`
+    case 'downloading':
+      return `正在下载 v${s.version ?? ''}…${s.percent ?? 0}%`
+    case 'ready':
+      return `v${s.version} 已下载完成，重启后安装`
+    case 'not-available':
+      return '已是最新版本'
+    case 'error':
+      return `检查失败：${s.message ?? '未知错误'}`
+    default:
+      return '启动后会自动检查更新，也可手动检查'
+  }
+})
+
+function checkUpdate(): void {
+  void window.api.updateCheck()
+}
+
+function downloadUpdate(): void {
+  window.api.updateDownload()
+}
+
+function installUpdate(): void {
+  window.api.updateInstall()
 }
 </script>
 
@@ -129,6 +168,28 @@ function commitBoolean(key: keyof Settings, checked: boolean): void {
               <span class="slider" />
             </span>
           </label>
+
+          <div class="field">
+            <span class="field-label">版本与更新</span>
+            <div class="path-row">
+              <code>v{{ update.currentVersion || '—' }}</code>
+              <button
+                v-if="update.status === 'available'"
+                class="btn text"
+                type="button"
+                @click="downloadUpdate"
+              >
+                下载更新
+              </button>
+              <button v-else-if="update.status === 'ready'" class="btn text" type="button" @click="installUpdate">
+                重启并安装
+              </button>
+              <button v-else class="btn text" type="button" :disabled="checking" @click="checkUpdate">
+                {{ checking ? '检查中…' : '检查更新' }}
+              </button>
+            </div>
+            <small class="field-hint">{{ updateHint }}</small>
+          </div>
 
           <div class="field">
             <span class="field-label">配置文件</span>

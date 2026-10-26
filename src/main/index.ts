@@ -4,6 +4,7 @@ import { Scheduler } from './scheduler'
 import { ReminderManager } from './reminderWindows'
 import { registerIpc } from './ipc'
 import { createTray, type TrayApi } from './tray'
+import { updater } from './updater'
 import { applyAutoStart } from './autostart'
 import { logger } from './logger'
 import { loadRenderer, resourcePath, sharedWebPreferences } from './utils'
@@ -60,6 +61,13 @@ function bootstrap(): void {
     }
   }).broadcastSchedule
 
+  // 自动更新：初始化后由内部延迟静默检查，状态变化推给主窗口与托盘
+  updater.init((state) => {
+    const win = mainWindow
+    if (win && !win.isDestroyed()) win.webContents.send('update:state', state)
+    trayApi?.rebuild()
+  })
+
   // 托盘实例随应用生命周期常驻
   trayApi = createTray(
     store,
@@ -69,7 +77,17 @@ function bootstrap(): void {
       app.quit()
     },
     () => scheduler.getRestState(),
-    () => scheduler.endRest()
+    () => scheduler.endRest(),
+    () => {
+      showMainWindow()
+      void updater.check(false)
+    },
+    () => {
+      const state = updater.getState()
+      if (state.status === 'available') return `发现新版本 v${state.version}（点击更新）`
+      if (state.status === 'ready') return `新版本 v${state.version} 已就绪（点击安装）`
+      return '检查更新'
+    }
   )
 
   scheduler.start()

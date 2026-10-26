@@ -170,6 +170,26 @@ git push origin main --tags
 node scripts/verify-defaults.mjs
 ```
 
+## 自动更新
+
+安装版自带应用内更新（`electron-updater` + GitHub Releases），**无需自建服务端**：
+
+- 更新源来自 `package.json` 的 `build.publish`（provider: github），元数据是打包时生成的 `latest.yml`，随安装包一起上传到 Release；
+- 启动 10 秒后静默检查一次，失败则 30 分钟后重试；发现新版本只提示、不自动下载（`autoDownload = false`）；
+- 手动入口：设置 → 「版本与更新」→ 检查更新；也可从托盘菜单「检查更新」进入；
+- 下载完成后提示「重启并安装」，退出应用时也会自动安装（`autoInstallOnAppQuit`）；
+- 界面状态：`idle / checking / available / downloading(进度) / ready / error`。
+
+限制与注意事项：
+
+| 事项 | 说明 |
+| --- | --- |
+| 仅安装版可用 | 免安装绿色版（`win-unpacked`）与 `pnpm dev` 均不支持，界面会显示「开发模式不支持自动更新」 |
+| 必须是「装着旧版本」才能验证 | 1.0.0 的安装包里没有更新模块，装了 1.0.0 不会自动升级；要验证链路需装 1.1.0 后再发 1.1.1 |
+| 更新包体积 | 当前 `latest.yml` 未包含 `blockMapSize`，走**全量下载**（约 108 MB），不是差分 |
+| 未签名 | 静默更新不受影响，但新版本首次启动仍可能触发 SmartScreen |
+| 网络 | 需要能访问 GitHub API 与 `github.com` 下载资源；国内网络不佳时建议后续换成 `generic` provider + 国内 CDN |
+
 ## 配置说明
 
 ### 存储位置
@@ -270,6 +290,9 @@ scripts/
 | `reminder:data` / `rest:data` / `rest:tick` | M → R | 窗口数据与倒计时驱动 |
 | `rest:state` | M → R | 休息状态推送（休息中 + 剩余时间） |
 | `rest:end` | R → M | 提前结束休息 |
+| `update:get` / `update:check` | R → M | 查询更新状态 / 检查更新 |
+| `update:download` / `update:install` | R → M | 下载新版本 / 重启并安装 |
+| `update:state` | M → R | 更新状态推送（可用版本、下载进度） |
 | `window:minimize` / `window:close` | R → M | 主窗口控制 |
 
 ## 许可证

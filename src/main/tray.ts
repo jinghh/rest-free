@@ -18,7 +18,9 @@ export function createTray(
   onOpenMain: () => void,
   onQuit: () => void,
   getRestState: () => RestState,
-  onEndRest: () => void
+  onEndRest: () => void,
+  onCheckUpdate: () => void,
+  getUpdateLabel: () => string | null
 ): TrayApi {
   const icon = nativeImage.createFromPath(resourcePath('tray.png'))
   const tray = new Tray(icon)
@@ -26,10 +28,15 @@ export function createTray(
   const rebuild = (): void => {
     const dnd = store.getConfig().settings.doNotDisturb
     const rest = getRestState()
+    const updateLabel = getUpdateLabel()
     const template: Electron.MenuItemConstructorOptions[] = [
       { label: '打开主界面', click: onOpenMain },
       { type: 'separator' }
     ]
+
+    if (updateLabel) {
+      template.push({ label: updateLabel, click: onCheckUpdate }, { type: 'separator' })
+    }
 
     if (rest.resting) {
       const remain = formatRemain(rest.remainMs)

@@ -1,6 +1,6 @@
 {
   "name": "rest-free",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "定时休息提醒 PC 应用：多任务、多位置提醒、立即/稍后休息、配置持久化",
   "main": "./out/main/index.js",
   "author": "rest-free",
@@ -34,6 +34,13 @@
     "appId": "com.restfree.app",
     "productName": "Rest-Free",
     "artifactName": "Rest-Free-${version}-setup.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "jinghh",
+        "repo": "rest-free"
+      }
+    ],
     "files": [
       "out/**/*"
     ],
@@ -61,6 +68,7 @@
     "vue-tsc": "^3.3.13"
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "pinia": "^4.1.0",
     "vue": "^3.5.44"
   }

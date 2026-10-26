@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { DEFAULT_SETTINGS, DEFAULTS_VERSION, type AppConfig, type Settings, type TaskDraft } from '@shared/types'
-import type { RestState } from '@shared/api'
+import type { RestState, UpdateState } from '@shared/api'
 
 /**
  * 全局状态：配置 + 调度快照。
@@ -20,6 +20,8 @@ export const useAppStore = defineStore('app', () => {
   const schedule = ref<Record<string, number>>({})
   /** 休息状态（静默休息 / 全屏倒计时期间由主进程推送） */
   const restState = ref<RestState>({ resting: false, remainMs: 0 })
+  /** 自动更新状态 */
+  const updateState = ref<UpdateState>({ status: 'idle', currentVersion: '' })
 
   async function load(): Promise<void> {
     const [cfg, snap] = await Promise.all([window.api.getConfig(), window.api.getScheduleSnapshot()])
@@ -66,11 +68,17 @@ export const useAppStore = defineStore('app', () => {
     restState.value = state
   }
 
+  /** 自动更新状态推送 */
+  function applyUpdateState(state: UpdateState): void {
+    updateState.value = state
+  }
+
   return {
     config,
     ready,
     schedule,
     restState,
+    updateState,
     tasks,
     enabledCount,
     dnd,
@@ -81,6 +89,7 @@ export const useAppStore = defineStore('app', () => {
     updateSettings,
     applyBroadcast,
     applySchedule,
-    applyRestState
+    applyRestState,
+    applyUpdateState
   }
 })

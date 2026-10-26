@@ -21,6 +21,31 @@ export interface RestState {
   remainMs: number
 }
 
+/** 自动更新状态 */
+export type UpdateStatus =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'ready'
+  | 'error'
+
+/** 自动更新状态快照 */
+export interface UpdateState {
+  status: UpdateStatus
+  /** 当前应用版本 */
+  currentVersion: string
+  /** 可更新到的版本（available / downloading / ready 时有值） */
+  version?: string
+  /** 下载进度 0~100 */
+  percent?: number
+  /** 错误信息 */
+  message?: string
+  /** 未打包（开发模式）时更新不可用 */
+  unsupported?: boolean
+}
+
 /** 应用路径信息 */
 export interface AppPaths {
   userData: string
@@ -62,4 +87,16 @@ export interface Api {
   onRestState(cb: (state: RestState) => void): () => void
   /** 提前结束休息 */
   restEnd(): void
+
+  // 自动更新
+  /** 获取当前更新状态（含应用版本） */
+  getUpdateState(): Promise<UpdateState>
+  /** 订阅更新状态变化 */
+  onUpdateState(cb: (state: UpdateState) => void): () => void
+  /** 手动检查更新（auto=false 时静默失败） */
+  updateCheck(auto?: boolean): Promise<UpdateState>
+  /** 开始下载新版本 */
+  updateDownload(): void
+  /** 退出并安装已下载的新版本 */
+  updateInstall(): void
 }

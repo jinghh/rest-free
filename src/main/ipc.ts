@@ -6,6 +6,7 @@ import type { Scheduler } from './scheduler'
 import type { ReminderManager } from './reminderWindows'
 import { applyAutoStart } from './autostart'
 import { logger } from './logger'
+import { updater } from './updater'
 
 /**
  * 渲染层 ↔ 主进程通道。
@@ -88,6 +89,12 @@ export function registerIpc(deps: {
   ipcMain.on('rest:end', () => {
     scheduler.endRest()
   })
+
+  // 自动更新：状态查询 / 手动检查 / 下载 / 重启安装
+  ipcMain.handle('update:get', () => updater.getState())
+  ipcMain.handle('update:check', (_e, auto: unknown) => updater.check(auto === true))
+  ipcMain.on('update:download', () => updater.download())
+  ipcMain.on('update:install', () => updater.quitAndInstall())
 
   ipcMain.on('window:minimize', () => {
     getMainWindow()?.minimize()
