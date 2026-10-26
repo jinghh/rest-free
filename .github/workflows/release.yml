@@ -46,8 +46,12 @@ jobs:
       - name: 回归测试
         run: pnpm run test
 
+      # --publish never：发布统一由 action-gh-release 负责。
+      # 否则 electron-builder 检测到 repository + tag 会自动尝试发布，因缺少 GH_TOKEN 而失败。
       - name: 构建安装包（NSIS）
-        run: pnpm run dist:win
+        run: pnpm run dist:win:ci
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false # 无代码签名证书，跳过证书自动发现
 
       - name: 校验产物存在
         shell: pwsh

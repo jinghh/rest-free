@@ -27,7 +27,8 @@
     "start": "electron .",
     "gen:icon": "powershell -ExecutionPolicy Bypass -File scripts/gen-icon.ps1 && node scripts/make-ico.mjs",
     "pack:win": "npm run build && electron-builder --win --dir",
-    "dist:win": "npm run build && electron-builder --win"
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:win:ci": "npm run build && electron-builder --win --publish never"
   },
   "build": {
     "appId": "com.restfree.app",
